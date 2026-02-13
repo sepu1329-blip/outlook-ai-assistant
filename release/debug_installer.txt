@@ -1,0 +1,42 @@
+@echo off
+setlocal
+
+set "KEY=HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\WEF\Developer"
+set "ID=b704c768-466d-4952-8700-123456789abc"
+
+echo [1단계] 레지스트리 키 확인 중... (Checking Registry)
+reg query "%KEY%" /v "%ID%" >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [실패] 레지스트리 키가 없습니다. install_cmd.bat을 다시 실행해 주세요.
+    echo [FAIL] Registry key not found.
+    pause
+    exit /b
+)
+echo [성공] 키가 존재합니다.
+
+echo.
+echo [2단계] 연결된 파일 경로 확인 중... (Checking File Path)
+for /f "tokens=2,*" %%A in ('reg query "%KEY%" /v "%ID%"') do set "MANIFEST_PATH=%%B"
+echo 등록된 경로: "%MANIFEST_PATH%"
+
+if exist "%MANIFEST_PATH%" (
+    echo [성공] 해당 경로에 파일이 실제로 존재합니다.
+    echo [PASS] Manifest file found.
+) else (
+    echo [실패!] 파일이 해당 경로에 없습니다!
+    echo [FAIL] File missing at path.
+    echo 혹시 폴더를 이동하거나 USB에서 설치하셨나요?
+    echo install_cmd.bat을 다시 실행해서 경로를 갱신해 주세요.
+)
+
+echo.
+echo [3단계] 차단 정책 확인 (Checking Policies)
+reg query "HKEY_CURRENT_USER\Software\Policies\Microsoft\Office\16.0\WEF" /s 2>nul
+if %errorlevel% equ 0 (
+    echo [경고] WEF 관련 차단 정책이 발견되었습니다. 이것 때문에 안 보일 수 있습니다.
+    echo [WARN] Blocking policies detected.
+) else (
+    echo [양호] 특별한 차단 정책은 보이지 않습니다.
+)
+
+pause

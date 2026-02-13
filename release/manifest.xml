@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides"
+  xsi:type="MailApp">
+  <Id>b704c768-466d-4952-8700-123456789abc</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Internal</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Outlook AI Assistant" />
+  <Description DefaultValue="AI Assistant for Outlook with Chat and Summary features." />
+  <IconUrl DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/assets/icon-64.png" />
+  <SupportUrl DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/help" />
+  <AppDomains>
+    <AppDomain>https://sepu1329-blip.github.io/outlook-ai-assistant</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Mailbox" />
+  </Hosts>
+  <Requirements>
+    <Sets>
+      <Set Name="Mailbox" MinVersion="1.1" />
+    </Sets>
+  </Requirements>
+  <FormSettings>
+    <Form xsi:type="ItemRead">
+      <DesktopSettings>
+        <SourceLocation DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/index.html" />
+        <RequestedHeight>250</RequestedHeight>
+      </DesktopSettings>
+    </Form>
+  </FormSettings>
+  <Permissions>ReadWriteItem</Permissions>
+  <Rule xsi:type="RuleCollection" Mode="Or">
+    <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read" />
+  </Rule>
+  <DisableEntityHighlighting>false</DisableEntityHighlighting>
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="MailHost">
+        <DesktopFormFactor>
+          <FunctionFile resid="funcFile" />
+          <ExtensionPoint xsi:type="MessageReadCommandSurface">
+            <OfficeTab id="TabDefault">
+              <Group id="msgReadGroup">
+                <Label resid="groupLabel" />
+                <Control xsi:type="Button" id="msgReadOpenPaneButton">
+                  <Label resid="paneReadButtonLabel" />
+                  <Supertip>
+                    <Title resid="paneReadButtonTitle" />
+                    <Description resid="paneReadButtonDesc" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="icon16" />
+                    <bt:Image size="32" resid="icon32" />
+                    <bt:Image size="80" resid="icon80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <SourceLocation resid="taskpaneUrl" />
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="icon16" DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/vite.svg" />
+        <bt:Image id="icon32" DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/vite.svg" />
+        <bt:Image id="icon80" DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/vite.svg" />
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="funcFile" DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/commands.html" />
+        <bt:Url id="taskpaneUrl" DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/index.html" />
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="groupLabel" DefaultValue="AI Assistant" />
+        <bt:String id="paneReadButtonLabel" DefaultValue="Open AI Chat" />
+        <bt:String id="paneReadButtonTitle" DefaultValue="Open AI Chat" />
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="paneReadButtonDesc" DefaultValue="Opens the AI Assistant side panel." />
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

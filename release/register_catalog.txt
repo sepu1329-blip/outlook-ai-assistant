@@ -1,0 +1,37 @@
+@echo off
+setlocal enabledelayedexpansion
+
+REM Generate a random GUID for the catalog ID
+set "CATALOG_ID={5A9B8C7D-6E5F-4A3B-2C1D-0E9F8A7B6C5D}"
+
+REM Get absolute path to CURRENT directory (where manifest.xml is)
+set "CATALOG_PATH=%~dp0"
+REM Remove trailing backslash if present
+if "%CATALOG_PATH:~-1%"=="\" set "CATALOG_PATH=%CATALOG_PATH:~0,-1%"
+
+echo Registering Trusted Catalog...
+echo Path: %CATALOG_PATH%
+
+REM Registry Key for Trusted Catalogs
+set "REG_KEY=HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\%CATALOG_ID%"
+
+REM Add Registry Keys
+reg add "%REG_KEY%" /v "Id" /t REG_SZ /d "%CATALOG_ID%" /f
+reg add "%REG_KEY%" /v "Url" /t REG_SZ /d "%CATALOG_PATH%" /f
+reg add "%REG_KEY%" /v "Flags" /t REG_DWORD /d 1 /f
+
+if %errorlevel% equ 0 (
+    echo.
+    echo [SUCCESS] Trusted Catalog Registered!
+    echo.
+    echo Instructions:
+    echo 1. Restart Outlook.
+    echo 2. Go to 'Get Add-ins' (or 'Store' / 'All Apps').
+    echo 3. Look for 'SHARED FOLDER' tab.
+    echo 4. Install 'Outlook AI Assistant' from there.
+) else (
+    echo.
+    echo [FAIL] Could not register catalog. Try asking IT.
+)
+
+pause

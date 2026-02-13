@@ -1,0 +1,13 @@
+# Helper: Register as Trusted Catalog (Fallback)
+
+If the direct Developer registration failed (blocked only), we can try adding this folder as a "Trusted Catalog".
+
+1. Run `register_catalog.bat`.
+2. Restart Outlook.
+3. Open "Get Add-ins" (All Apps).
+4. Look for a new tab called **"Shared Folder"**.
+5. Your add-in should be inside there.
+
+## Also Check:
+- **Uninstall VSTO**: Did you uninstall the previous VSTO version from "Add or Remove Programs"? It might be conflicting.
+- **Enable Optional Connected Experiences**: Go to **File > Office Account > Account Privacy > Manage Settings**. Ensure "Optional connected experiences" is checked (needed for Web Add-ins).

@@ -1,0 +1,22 @@
+@echo off
+set "REG_KEY=HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\WEF\Developer"
+set "ADDIN_ID=b704c768-466d-4952-8700-123456789abc"
+
+echo Checking Registry Key...
+echo Key: %REG_KEY%
+echo ID: %ADDIN_ID%
+echo.
+
+reg query "%REG_KEY%" /v "%ADDIN_ID%"
+
+if %errorlevel% equ 0 (
+    echo.
+    echo [OK] Registry key found!
+    echo Outlook should see the file at the path shown above.
+) else (
+    echo.
+    echo [FAIL] Registry key NOT found.
+    echo Please try running install_cmd.bat as Administrator.
+)
+
+pause

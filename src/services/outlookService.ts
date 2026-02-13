@@ -1,4 +1,25 @@
 
+// Store the latest email data received from VSTO
+let vstoEmailData: { subject: string; body: string; sender: string; from: string } | null = null;
+
+// Listen for messages from VSTO WebView2
+window.addEventListener('message', (event) => {
+    try {
+        // Handle VSTO messages
+        const data = event.data;
+        if (data && data.type === 'VSTO_EMAIL_DATA') {
+            console.log("OutlookService: Received data from VSTO", data.payload);
+            vstoEmailData = {
+                subject: data.payload.subject || "No Subject",
+                body: data.payload.body || "",
+                sender: data.payload.senderName || "Unknown",
+                from: data.payload.senderEmail || "unknown@example.com"
+            };
+        }
+    } catch (err) {
+        console.error("Error processing VSTO message:", err);
+    }
+});
 
 export const outlookService = {
     /**
@@ -7,38 +28,36 @@ export const outlookService = {
     async getCurrentEmail(): Promise<{ subject: string; body: string; sender: string; from: string }> {
         return new Promise((resolve, reject) => {
             try {
-                if (!Office) {
-                    reject("Office API not loaded.");
+                // 1. Try standard Office.js API (Web Add-in)
+                if (Office && Office.context && Office.context.mailbox && Office.context.mailbox.item) {
+                    const item = Office.context.mailbox.item;
+                    item.body.getAsync(Office.CoercionType.Text, (result) => {
+                        if (result.status === Office.AsyncResultStatus.Succeeded) {
+                            resolve({
+                                subject: item.subject || "No Subject",
+                                body: result.value,
+                                sender: item.from?.displayName || "Unknown",
+                                from: item.from?.emailAddress || "unknown@example.com"
+                            });
+                        } else {
+                            reject(result.error.message);
+                        }
+                    });
                     return;
                 }
-                if (!Office.context) {
-                    reject("Office.context is missing.");
-                    return;
-                }
-                if (!Office.context.mailbox) {
-                    const diagnostics = Office.context.diagnostics || {};
-                    const debugInfo = `Host: ${diagnostics.host || 'N/A'}, Platform: ${diagnostics.platform || 'N/A'}, ContextKeys: ${Object.keys(Office.context).join(', ')}`;
-                    reject(`Office.context.mailbox is missing. Debug info: ${debugInfo}`);
-                    return;
-                }
-                if (!Office.context.mailbox.item) {
-                    reject("No email selected (or multiple emails selected). Please select a single email.");
-                    return;
-                }
-                const item = Office.context.mailbox.item;
 
-                item.body.getAsync(Office.CoercionType.Text, (result) => {
-                    if (result.status === Office.AsyncResultStatus.Succeeded) {
-                        resolve({
-                            subject: item.subject || "No Subject",
-                            body: result.value,
-                            sender: item.from?.displayName || "Unknown",
-                            from: item.from?.emailAddress || "unknown@example.com"
-                        });
-                    } else {
-                        reject(result.error.message);
-                    }
-                });
+                // 2. Fallback: Check if VSTO sent us data
+                if (vstoEmailData) {
+                    console.log("OutlookService: Using VSTO data fallback");
+                    resolve(vstoEmailData);
+                    return;
+                }
+
+                // 3. If neither works, reject with specific error
+                const diagnostics = Office?.context?.diagnostics || {};
+                const debugInfo = `Host: ${diagnostics.host || 'N/A'}, Platform: ${diagnostics.platform || 'N/A'}`;
+                reject(`No email selected. (Web Add-in: Mailbox missing. VSTO: No data received yet). Debug: ${debugInfo}`);
+
             } catch (e) {
                 reject(e);
             }
