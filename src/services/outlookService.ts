@@ -7,8 +7,20 @@ export const outlookService = {
     async getCurrentEmail(): Promise<{ subject: string; body: string; sender: string; from: string }> {
         return new Promise((resolve, reject) => {
             try {
-                if (!Office.context || !Office.context.mailbox || !Office.context.mailbox.item) {
-                    reject("No email selected or Office API not ready.");
+                if (!Office) {
+                    reject("Office API not loaded.");
+                    return;
+                }
+                if (!Office.context) {
+                    reject("Office.context is missing.");
+                    return;
+                }
+                if (!Office.context.mailbox) {
+                    reject("Office.context.mailbox is missing. Are you running this in Outlook?");
+                    return;
+                }
+                if (!Office.context.mailbox.item) {
+                    reject("No email selected (or multiple emails selected). Please select a single email.");
                     return;
                 }
                 const item = Office.context.mailbox.item;
@@ -37,8 +49,16 @@ export const outlookService = {
      */
     async searchEmails(keyword: string): Promise<string[]> {
         return new Promise((resolve, reject) => {
-            if (!Office.context || !Office.context.mailbox || !Office.context.mailbox.makeEwsRequestAsync) {
-                reject("EWS Not Available (Office API not ready or not supported).");
+            if (!Office) {
+                reject("Office API not loaded.");
+                return;
+            }
+            if (!Office.context || !Office.context.mailbox) {
+                reject("Office Mailbox API not available.");
+                return;
+            }
+            if (!Office.context.mailbox.makeEwsRequestAsync) {
+                reject("EWS Request not supported in this Outlook version/mode.");
                 return;
             }
             // EWS Request to find items

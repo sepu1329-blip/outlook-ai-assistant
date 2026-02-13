@@ -100,7 +100,7 @@ function App() {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `Hello! I'm your AI Outlook Assistant (v1.0.2). \n\nI can help you summarize emails, draft replies, or find information. \n\nPlease configure your API keys in Settings first.`,
+        content: `Hello! I'm your AI Outlook Assistant (v1.0.3). \n\nI can help you summarize emails, draft replies, or find information. \n\nPlease configure your API keys in Settings first.`,
         timestamp: Date.now()
       }]);
     }
