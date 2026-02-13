@@ -37,6 +37,10 @@ export const outlookService = {
      */
     async searchEmails(keyword: string): Promise<string[]> {
         return new Promise((resolve, reject) => {
+            if (!Office.context || !Office.context.mailbox || !Office.context.mailbox.makeEwsRequestAsync) {
+                reject("EWS Not Available (Office API not ready or not supported).");
+                return;
+            }
             // EWS Request to find items
             // Note: This is a simplified XML construction. In production, use a proper builder.
             const request =
