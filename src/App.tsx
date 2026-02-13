@@ -80,12 +80,13 @@ function App() {
 
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "An unexpected error occurred.");
+      const errorMessage = typeof err === 'string' ? err : err.message || "An unexpected error occurred.";
+      setError(errorMessage);
       // Add error message to chat
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: 'system',
-        content: `Error: ${err.message}`,
+        content: `Error: ${errorMessage}`,
         timestamp: Date.now()
       }]);
     } finally {
@@ -99,7 +100,7 @@ function App() {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `Hello! I'm your AI Outlook Assistant (v1.0.1). \n\nI can help you summarize emails, draft replies, or find information. \n\nPlease configure your API keys in Settings first.`,
+        content: `Hello! I'm your AI Outlook Assistant (v1.0.2). \n\nI can help you summarize emails, draft replies, or find information. \n\nPlease configure your API keys in Settings first.`,
         timestamp: Date.now()
       }]);
     }
