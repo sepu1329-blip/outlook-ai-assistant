@@ -2,17 +2,13 @@ import { useState, useEffect } from 'react';
 import { Settings, AlertCircle } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { SettingsPanel } from './components/SettingsPanel';
-import { SearchFilter } from './components/SearchFilter';
+
 import { outlookService } from './services/outlookService';
 import { llmService } from './services/llmService';
 import type { AppMode, AppSettings, Message } from './types';
 
 function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [appMode, setAppMode] = useState<AppMode>('current');
-  const [searchKeyword, setSearchKeyword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   // Initialize Settings from LocalStorage
@@ -35,63 +31,7 @@ function App() {
   const clearSettings = () => {
     localStorage.removeItem('redink-outlook-settings');
     setSettings({ openaiKey: '', geminiKey: '', claudeKey: '', selectedModel: 'openai' });
-    setMessages([]);
     setError(null);
-  };
-
-  const handleSendMessage = async (content: string) => {
-    try {
-      setError(null);
-      setIsLoading(true);
-
-      // Add User Message
-      const userMsg: Message = {
-        id: Date.now().toString(),
-        role: 'user',
-        content,
-        timestamp: Date.now()
-      };
-      setMessages(prev => [...prev, userMsg]);
-
-      // 1. Get Context
-      let context = "";
-      if (appMode === 'current') {
-        const item = await outlookService.getCurrentEmail();
-        context = `Subject: ${item.subject}\nFrom: ${item.sender} (${item.from})\n\nBody:\n${item.body}`;
-      } else {
-        if (!searchKeyword.trim()) {
-          throw new Error("Search keyword is required in Search Mode.");
-        }
-        const emails = await outlookService.searchEmails(searchKeyword);
-        context = `Found ${emails.length} emails matching "${searchKeyword}":\n\n${emails.join('\n\n')}`;
-      }
-
-      // 2. Call LLM
-      const reply = await llmService.sendMessage([...messages, userMsg], context, settings);
-
-      // Add Assistant Message
-      const assistantMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: reply,
-        timestamp: Date.now()
-      };
-      setMessages(prev => [...prev, assistantMsg]);
-
-    } catch (err: any) {
-      console.error(err);
-      const errorMessage = typeof err === 'string' ? err : err.message || "An unexpected error occurred.";
-      setError(errorMessage);
-      // Add error message to chat
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        role: 'system',
-        content: `Error: ${errorMessage}`,
-        timestamp: Date.now()
-      }]);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   // Initial Welcome
@@ -125,20 +65,10 @@ function App() {
         </button>
       </header>
 
-      {/* Controls */}
-      <SearchFilter
-        mode={appMode}
-        searchKeyword={searchKeyword}
-        onModeChange={setAppMode}
-        onKeywordChange={setSearchKeyword}
-      />
-
       {/* Main Chat Area */}
       <div className="flex-1 overflow-hidden relative">
         <ChatInterface
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          isLoading={isLoading}
+          settings={settings}
         />
       </div>
 
