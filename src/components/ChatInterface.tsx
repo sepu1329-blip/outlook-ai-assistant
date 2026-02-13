@@ -4,7 +4,7 @@ import { outlookService } from '../services/outlookService';
 import { llmService } from '../services/llmService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import type { AppSettings } from '../types';
+import type { AppSettings, AppMode } from '../types';
 
 interface Message {
     id: string;
@@ -15,9 +15,11 @@ interface Message {
 
 interface ChatInterfaceProps {
     settings: AppSettings;
+    mode: AppMode;
+    searchKeyword: string;
 }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, searchKeyword }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -78,28 +80,27 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings }) => {
         setError(null);
 
         try {
-            // 1. Get Context (Current Email + Search Results if needed)
+            // 1. Get Context based on Mode
             let context = "";
 
-            // Try to get current email
-            try {
-                const email = await outlookService.getCurrentEmail();
-                context += `Current Email:\nSubject: ${email.subject}\nFrom: ${email.sender} <${email.from}>\nBody: ${email.body}\n\n`;
-            } catch (e) {
-                console.log("No email context available:", e);
-            }
-
-            // Check if user wants to search (simple keyword detection for now)
-            if (input.toLowerCase().includes("search") || input.toLowerCase().includes("find email")) {
-                // Extract keyword (very basic)
-                const keyword = input.replace(/search|find email/gi, "").trim();
-                if (keyword) {
-                    try {
-                        const results = await outlookService.searchEmails(keyword);
-                        context += `Search Results for "${keyword}":\n${results.join("\n")}\n\n`;
-                    } catch (e) {
-                        context += `Search failed: ${e}\n\n`;
-                    }
+            if (mode === 'current') {
+                // Try to get current email
+                try {
+                    const email = await outlookService.getCurrentEmail();
+                    context += `Current Email:\nSubject: ${email.subject}\nFrom: ${email.sender} <${email.from}>\nBody: ${email.body}\n\n`;
+                } catch (e) {
+                    console.log("No email context available:", e);
+                }
+            } else if (mode === 'search') {
+                if (!searchKeyword.trim()) {
+                    throw new Error("Please enter a keyword in Search Mode.");
+                }
+                try {
+                    // In search mode, we fetch relevant emails based on the keyword
+                    const results = await outlookService.searchEmails(searchKeyword);
+                    context += `Found ${results.length} emails matching "${searchKeyword}":\n\n${results.join("\n")}\n\n`;
+                } catch (e) {
+                    context += `Search failed: ${e}\n\n`;
                 }
             }
 
@@ -152,10 +153,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings }) => {
                     >
                         <div
                             className={`max-w-[85%] rounded-lg p-3 shadow-sm ${msg.role === 'user'
-                                    ? 'bg-blue-600 text-white'
-                                    : msg.role === 'system'
-                                        ? 'bg-red-50 text-red-600 border border-red-100'
-                                        : 'bg-white border border-gray-200 text-gray-800'
+                                ? 'bg-blue-600 text-white'
+                                : msg.role === 'system'
+                                    ? 'bg-red-50 text-red-600 border border-red-100'
+                                    : 'bg-white border border-gray-200 text-gray-800'
                                 }`}
                         >
                             <div className="prose prose-sm max-w-none dark:prose-invert">
