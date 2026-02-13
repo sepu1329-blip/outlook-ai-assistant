@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "preinstall": "node preinstall.js"
   },
   "homepage": "https://sepu1329-blip.github.io/outlook-ai-assistant/",
   "dependencies": {

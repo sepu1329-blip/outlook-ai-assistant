@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { Settings, AlertCircle } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { SettingsPanel } from './components/SettingsPanel';
-import type { AppSettings } from './types';
+import { SearchFilter } from './components/SearchFilter';
+import type { AppSettings, AppMode } from './types';
 
 function App() {
   const [showSettings, setShowSettings] = useState(false);
+  const [appMode, setAppMode] = useState<AppMode>('current');
+  const [searchKeyword, setSearchKeyword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   // Initialize Settings from LocalStorage
@@ -50,10 +53,20 @@ function App() {
         </button>
       </header>
 
+      {/* Controls (Search Mode) */}
+      <SearchFilter
+        mode={appMode}
+        searchKeyword={searchKeyword}
+        onModeChange={setAppMode}
+        onKeywordChange={setSearchKeyword}
+      />
+
       {/* Main Chat Area */}
       <div className="flex-1 overflow-hidden relative">
         <ChatInterface
           settings={settings}
+          mode={appMode}
+          searchKeyword={searchKeyword}
         />
       </div>
 
