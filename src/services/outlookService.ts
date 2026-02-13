@@ -16,7 +16,9 @@ export const outlookService = {
                     return;
                 }
                 if (!Office.context.mailbox) {
-                    reject("Office.context.mailbox is missing. Are you running this in Outlook?");
+                    const diagnostics = Office.context.diagnostics || {};
+                    const debugInfo = `Host: ${diagnostics.host || 'N/A'}, Platform: ${diagnostics.platform || 'N/A'}, ContextKeys: ${Object.keys(Office.context).join(', ')}`;
+                    reject(`Office.context.mailbox is missing. Debug info: ${debugInfo}`);
                     return;
                 }
                 if (!Office.context.mailbox.item) {
@@ -54,7 +56,9 @@ export const outlookService = {
                 return;
             }
             if (!Office.context || !Office.context.mailbox) {
-                reject("Office Mailbox API not available.");
+                const diagnostics = Office.context?.diagnostics || {};
+                const debugInfo = `Host: ${diagnostics.host || 'N/A'}, Platform: ${diagnostics.platform || 'N/A'}`;
+                reject(`Office Mailbox API not available. Debug info: ${debugInfo}`);
                 return;
             }
             if (!Office.context.mailbox.makeEwsRequestAsync) {
