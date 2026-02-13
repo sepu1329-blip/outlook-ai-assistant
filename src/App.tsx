@@ -1,11 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Settings, AlertCircle } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { SettingsPanel } from './components/SettingsPanel';
-
-import { outlookService } from './services/outlookService';
-import { llmService } from './services/llmService';
-import type { AppMode, AppSettings, Message } from './types';
+import type { AppSettings } from './types';
 
 function App() {
   const [showSettings, setShowSettings] = useState(false);
@@ -33,18 +30,6 @@ function App() {
     setSettings({ openaiKey: '', geminiKey: '', claudeKey: '', selectedModel: 'openai' });
     setError(null);
   };
-
-  // Initial Welcome
-  useEffect(() => {
-    if (messages.length === 0) {
-      setMessages([{
-        id: 'welcome',
-        role: 'assistant',
-        content: `Hello! I'm your AI Outlook Assistant (v1.1.0 - Hybrid Mode). \n\nI can help you summarize emails, draft replies, or find information. \n\nPlease configure your API keys in Settings first.`,
-        timestamp: Date.now()
-      }]);
-    }
-  }, []);
 
   return (
     <div className="flex flex-col h-screen w-full bg-slate-50 relative overflow-hidden">

@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Paperclip, Search, Sparkles, Trash2, Reply } from 'lucide-react';
+import { Send, Loader2, Sparkles, Trash2, Reply } from 'lucide-react';
 import { outlookService } from '../services/outlookService';
 import { llmService } from '../services/llmService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import type { AppSettings } from '../types';
 
 interface Message {
     id: string;
@@ -13,14 +14,10 @@ interface Message {
 }
 
 interface ChatInterfaceProps {
-    apiKeys: {
-        openai?: string;
-        gemini?: string;
-        claude?: string;
-    };
+    settings: AppSettings;
 }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ apiKeys }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -74,7 +71,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ apiKeys }) => {
             timestamp: Date.now()
         };
 
-        setMessages(prev => [...prev, userMessage]);
+        const newMessages = [...messages, userMessage];
+        setMessages(newMessages);
         setInput('');
         setIsLoading(true);
         setError(null);
@@ -106,17 +104,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ apiKeys }) => {
             }
 
             // 2. Call LLM
-            // Prioritize keys: OpenAI -> Claude -> Gemini
-            let response = "";
-            if (apiKeys.openai) {
-                response = await llmService.generateResponse(input, context, 'openai', apiKeys.openai);
-            } else if (apiKeys.claude) {
-                response = await llmService.generateResponse(input, context, 'claude', apiKeys.claude);
-            } else if (apiKeys.gemini) {
-                response = await llmService.generateResponse(input, context, 'gemini', apiKeys.gemini);
-            } else {
-                throw new Error("No API Key configured. Please go to Settings.");
-            }
+            const response = await llmService.sendMessage(newMessages, context, settings);
 
             // 3. Add AI Response
             const assistantMessage: Message = {
