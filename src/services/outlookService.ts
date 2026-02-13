@@ -153,5 +153,36 @@ export const outlookService = {
         if (Office.context && Office.context.mailbox && Office.context.mailbox.item) {
             Office.context.mailbox.item.body.setSelectedDataAsync(text, { coercionType: Office.CoercionType.Html });
         }
+    },
+
+    /**
+     * Create a reply draft (Hybrid Mode)
+     */
+    createReplyDraft(text: string) {
+        // 1. Try VSTO first (Hybrid Mode Preferred)
+        // Note: We use window.chrome?.webview for WebView2 or standard window.postMessage for embedded
+        try {
+            if ((window as any).chrome?.webview) {
+                console.log("OutlookService: Sending Reply Draft to VSTO");
+                (window as any).chrome.webview.postMessage({
+                    type: "VSTO_CREATE_REPLY",
+                    payload: { body: text }
+                });
+                return;
+            }
+        } catch (e) {
+            console.warn("VSTO postMessage failed:", e);
+        }
+
+        // 2. Try Standard Web Add-in API
+        if (Office.context && Office.context.mailbox && Office.context.mailbox.item) {
+            // Note: displayReplyForm is standard, but might be blocked in this environment
+            Office.context.mailbox.item.displayReplyForm({
+                'htmlBody': text
+            });
+        } else {
+            console.warn("Cannot create reply: Neither VSTO nor Office.js available.");
+            throw new Error("Cannot create reply. Are you connected to Outlook?");
+        }
     }
 };
