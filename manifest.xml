@@ -11,11 +11,11 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Outlook AI Assistant" />
   <Description DefaultValue="AI Assistant for Outlook with Chat and Summary features." />
-  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png" />
-  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-64.png" />
-  <SupportUrl DefaultValue="https://localhost:3000/help" />
+  <IconUrl DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/assets/icon-64.png" />
+  <SupportUrl DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/help" />
   <AppDomains>
-    <AppDomain>https://localhost:3000</AppDomain>
+    <AppDomain>https://sepu1329-blip.github.io/outlook-ai-assistant</AppDomain>
   </AppDomains>
   <Hosts>
     <Host Name="Mailbox" />
@@ -28,7 +28,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://localhost:3000/index.html" />
+        <SourceLocation DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/index.html" />
         <RequestedHeight>250</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -70,13 +70,13 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="icon16" DefaultValue="https://localhost:3000/vite.svg" />
-        <bt:Image id="icon32" DefaultValue="https://localhost:3000/vite.svg" />
-        <bt:Image id="icon80" DefaultValue="https://localhost:3000/vite.svg" />
+        <bt:Image id="icon16" DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/vite.svg" />
+        <bt:Image id="icon32" DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/vite.svg" />
+        <bt:Image id="icon80" DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/vite.svg" />
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="funcFile" DefaultValue="https://localhost:3000/commands.html" />
-        <bt:Url id="taskpaneUrl" DefaultValue="https://localhost:3000/index.html" />
+        <bt:Url id="funcFile" DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/commands.html" />
+        <bt:Url id="taskpaneUrl" DefaultValue="https://sepu1329-blip.github.io/outlook-ai-assistant/index.html" />
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="groupLabel" DefaultValue="AI Assistant" />

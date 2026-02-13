@@ -7,11 +7,11 @@ export const outlookService = {
     async getCurrentEmail(): Promise<{ subject: string; body: string; sender: string; from: string }> {
         return new Promise((resolve, reject) => {
             try {
-                const item = Office.context.mailbox.item;
-                if (!item) {
-                    reject("No item selected");
+                if (!Office.context || !Office.context.mailbox || !Office.context.mailbox.item) {
+                    reject("No email selected or Office API not ready.");
                     return;
                 }
+                const item = Office.context.mailbox.item;
 
                 item.body.getAsync(Office.CoercionType.Text, (result) => {
                     if (result.status === Office.AsyncResultStatus.Succeeded) {
@@ -103,7 +103,7 @@ export const outlookService = {
      * Insert text into reply
      */
     insertText(text: string) {
-        if (Office.context.mailbox.item) {
+        if (Office.context && Office.context.mailbox && Office.context.mailbox.item) {
             Office.context.mailbox.item.body.setSelectedDataAsync(text, { coercionType: Office.CoercionType.Html });
         }
     }
