@@ -1,0 +1,21 @@
+[이메일 전송 문제 해결]
+보안 문제로 .bat 파일을 보낼 수 없어서, 확장자를 .txt로 변경했습니다.
+이 폴더를 회사 PC로 옮긴 후, 아래 순서대로 진행해 주세요.
+
+1. 파일 이름 변경 (필수)
+   - `install_cmd.txt`      -> `install_cmd.bat`
+   - `register_catalog.txt` -> `register_catalog.bat`
+   - `verify_install.txt`   -> `verify_install.bat`
+   
+   (이름 바꾸기 단축키: F2)
+   (확장자가 안 보이면 폴더 상단 '보기' -> '파일 확장명' 체크)
+
+2. `install_cmd.bat` 실행
+   - 성공 메시지가 나오면 아웃룩 재시작 후 확인.
+
+3. 그래도 안 되면 `register_catalog.bat` 실행
+   - "Trusted Catalog" 등록 후 아웃룩 재시작.
+   - 아웃룩 -> 앱 가져오기 -> "공유 폴더(Shared Folder)" 탭 확인.
+
+4. `verify_install.bat`
+   - 설치가 잘 되었는지 레지스트리 키를 확인하는 파일입니다.

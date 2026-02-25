@@ -1,0 +1,224 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Sparkles, Trash2, Reply } from 'lucide-react';
+import { outlookService } from '../services/outlookService';
+import { llmService } from '../services/llmService';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import type { AppSettings, AppMode } from '../types';
+
+interface Message {
+    id: string;
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    timestamp: number;
+}
+
+interface ChatInterfaceProps {
+    settings: AppSettings;
+    mode: AppMode;
+    searchKeyword: string;
+}
+
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, searchKeyword }) => {
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    // Initial Welcome
+    useEffect(() => {
+        if (messages.length === 0) {
+            setMessages([{
+                id: 'welcome',
+                role: 'assistant',
+                content: `Hello! I'm your AI Outlook Assistant (v1.1.0 - Hybrid Mode). \n\nI can help you summarize emails, draft replies, or find information. \n\nPlease configure your API keys in Settings first.`,
+                timestamp: Date.now()
+            }]);
+        }
+    }, []);
+
+    const handleClearChat = () => {
+        setMessages([{
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: `Chat cleared. How can I help you?`,
+            timestamp: Date.now()
+        }]);
+    };
+
+    const handleReplyDraft = (content: string) => {
+        try {
+            outlookService.createReplyDraft(content);
+        } catch (err: any) {
+            setError("Failed to create reply: " + err.message);
+        }
+    };
+
+    const handleSendMessage = async () => {
+        if (!input.trim() || isLoading) return;
+
+        const userMessage: Message = {
+            id: Date.now().toString(),
+            role: 'user',
+            content: input,
+            timestamp: Date.now()
+        };
+
+        const newMessages = [...messages, userMessage];
+        setMessages(newMessages);
+        setInput('');
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            // 1. Get Context based on Mode
+            let context = "";
+
+            if (mode === 'current') {
+                // Try to get current email
+                try {
+                    const email = await outlookService.getCurrentEmail();
+                    context += `Current Email:\nSubject: ${email.subject}\nFrom: ${email.sender} <${email.from}>\nBody: ${email.body}\n\n`;
+                } catch (e) {
+                    console.log("No email context available:", e);
+                }
+            } else if (mode === 'search') {
+                if (!searchKeyword.trim()) {
+                    throw new Error("Please enter a keyword in Search Mode.");
+                }
+                try {
+                    // In search mode, we fetch relevant emails based on the keyword
+                    const results = await outlookService.searchEmails(searchKeyword);
+                    context += `Found ${results.length} emails matching "${searchKeyword}":\n\n${results.join("\n")}\n\n`;
+                } catch (e) {
+                    context += `Search failed: ${e}\n\n`;
+                }
+            }
+
+            // 2. Call LLM
+            const response = await llmService.sendMessage(newMessages, context, settings);
+
+            // 3. Add AI Response
+            const assistantMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: response,
+                timestamp: Date.now()
+            };
+            setMessages(prev => [...prev, assistantMessage]);
+
+        } catch (err: any) {
+            console.error(err);
+            const errorMessage = typeof err === 'string' ? err : err.message || "An unexpected error occurred.";
+            setError(errorMessage);
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: 'system',
+                content: `Error: ${errorMessage}`,
+                timestamp: Date.now()
+            }]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="flex flex-col h-full bg-white">
+            {/* Header */}
+            <div className="bg-white border-b border-gray-100 px-4 py-3 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-blue-600" />
+                    <h1 className="font-semibold text-gray-800">AI Assistant</h1>
+                </div>
+                <button onClick={handleClearChat} className="p-1 hover:bg-gray-100 rounded text-gray-500" title="Clear Chat">
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            </div>
+
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.map((msg) => (
+                    <div
+                        key={msg.id}
+                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                        <div
+                                className={`max-w-[88%] ${
+                                    msg.role === 'user'
+                                        ? 'rounded-2xl rounded-tr-sm px-4 py-2.5 bg-[#4f46e5] text-white text-sm'
+                                        : msg.role === 'system'
+                                            ? 'rounded-xl px-3 py-2 bg-red-50 text-red-600 border border-red-100 text-xs'
+                                            : 'rounded-2xl rounded-tl-sm px-4 py-3 bg-[#f5f3ff] text-gray-800'
+                                }`}
+                            >
+                                <div className="markdown-content">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {msg.content}
+                                </ReactMarkdown>
+                            </div>
+
+                            {/* Reply Button for Assistant Messages containing draft-like text */}
+                            {msg.role === 'assistant' && (
+                                <div className="mt-2 flex justify-end">
+                                    <button
+                                        onClick={() => handleReplyDraft(msg.content)}
+                                        className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium"
+                                    >
+                                        <Reply className="w-3 h-3" />
+                                        Reply with this
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ))}
+                {isLoading && (
+                    <div className="flex justify-start">
+                        <div className="rounded-2xl rounded-tl-sm px-4 py-3 bg-[#f5f3ff]">
+                            <div className="gemini-dots">
+                                <div className="gemini-dot" />
+                                <div className="gemini-dot" />
+                                <div className="gemini-dot" />
+                            </div>
+                        </div>
+                    </div>
+                )}
+                <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div className="px-4 pb-4 pt-3 bg-white border-t border-gray-100">
+                {error && (
+                    <div className="mb-2 text-xs text-red-500 px-1">{error}</div>
+                )}
+                <div className="flex items-end gap-2 bg-[#f5f3ff] rounded-2xl px-4 py-2 shadow-sm ring-1 ring-[#e0e7ff] focus-within:ring-[#4f46e5] transition-all">
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        placeholder="Ask me to summarize or draft..."
+                        className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 focus:outline-none py-1 resize-none"
+                        disabled={isLoading}
+                    />
+                    <button
+                        onClick={handleSendMessage}
+                        disabled={isLoading || !input.trim()}
+                        className="p-1.5 rounded-xl bg-[#4f46e5] text-white hover:bg-[#4338ca] disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                    >
+                        <Send className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
