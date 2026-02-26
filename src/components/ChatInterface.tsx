@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, Trash2, Reply, Mail } from 'lucide-react';
+import { Send, Reply, Mail } from 'lucide-react';
 import { outlookService } from '../services/outlookService';
 import type { SearchEmailResult } from '../services/outlookService';
 import { llmService } from '../services/llmService';
@@ -19,9 +19,10 @@ interface ChatInterfaceProps {
     settings: AppSettings;
     mode: AppMode;
     searchKeyword: string;
+    clearChatTrigger?: number;
 }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, searchKeyword }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, searchKeyword, clearChatTrigger }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -56,6 +57,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
             timestamp: Date.now()
         }]);
     };
+
+    // Listen to clearChatTrigger from App.tsx
+    useEffect(() => {
+        if (clearChatTrigger && clearChatTrigger > 0) {
+            handleClearChat();
+        }
+    }, [clearChatTrigger]);
 
     const handleReplyDraft = (content: string) => {
         try {
@@ -154,18 +162,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
 
     return (
         <div className="flex flex-col h-full bg-white">
-            {/* Header */}
-            <div className="bg-white border-b border-slate-100 px-5 py-2.5 flex justify-between items-center hidden">
-                {/* Hid the inner header since App.tsx has one now, to match Excel style strictly. But if needed, just hiding it structure-wise is fine */}
-                <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-indigo-600" />
-                    <h1 className="font-semibold text-slate-800">AI Assistant</h1>
-                </div>
-                <button onClick={handleClearChat} className="p-1.5 hover:bg-slate-50 rounded-md text-slate-500 transition-all" title="Clear Chat">
-                    <Trash2 className="w-4 h-4" />
-                </button>
-            </div>
-
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((msg) => (
@@ -242,12 +238,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
                 {error && (
                     <div className="mb-2 text-xs text-red-500 px-1">{error}</div>
                 )}
-
-                <div className="flex absolute top-[138px] right-2 z-10">
-                    <button onClick={handleClearChat} className="p-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-md text-slate-500 shadow-sm transition-all" title="대화 초기화">
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
 
                 <div className="flex items-end gap-3">
                     <textarea

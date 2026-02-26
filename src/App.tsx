@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import pressAILogo from './assets/PressAI_Re.png';
-import { Settings, AlertCircle } from 'lucide-react';
+import { Settings, AlertCircle, Trash2 } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SearchFilter } from './components/SearchFilter';
@@ -11,6 +11,7 @@ function App() {
   const [appMode, setAppMode] = useState<AppMode>('current');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [clearChatTrigger, setClearChatTrigger] = useState(0);
 
   // Initialize Settings from LocalStorage
   const [settings, setSettings] = useState<AppSettings>(() => {
@@ -43,13 +44,22 @@ function App() {
           <img src={pressAILogo} alt="Press AI Logo" className="h-6 w-6 object-cover rounded" />
           <h1 className="font-semibold text-slate-800 text-base tracking-tight m-0">Press AI</h1>
         </div>
-        <button
-          onClick={() => setShowSettings(!showSettings)}
-          className="p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-md transition-all"
-          title="설정"
-        >
-          <Settings size={20} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setClearChatTrigger(prev => prev + 1)}
+            className="p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-md transition-all"
+            title="대화 초기화"
+          >
+            <Trash2 size={20} />
+          </button>
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-md transition-all"
+            title="설정"
+          >
+            <Settings size={20} />
+          </button>
+        </div>
       </header>
 
       {/* Controls (Search Mode) */}
@@ -66,6 +76,7 @@ function App() {
           settings={settings}
           mode={appMode}
           searchKeyword={searchKeyword}
+          clearChatTrigger={clearChatTrigger}
         />
       </div>
 
