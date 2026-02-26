@@ -1,6 +1,14 @@
 
 // Store the latest email data received from VSTO
-let vstoEmailData: { subject: string; body: string; sender: string; from: string } | null = null;
+let vstoEmailData: { subject: string; body: string; sender: string; from: string; images: string[] } | null = null;
+
+export interface SearchEmailResult {
+    entryId: string;
+    subject: string;
+    sender: string;
+    receivedTime: string;
+    preview: string;
+}
 
 // Listen for messages from VSTO WebView2
 window.addEventListener('message', (event) => {
@@ -13,7 +21,8 @@ window.addEventListener('message', (event) => {
                 subject: data.payload.subject || "No Subject",
                 body: data.payload.body || "",
                 sender: data.payload.senderName || "Unknown",
-                from: data.payload.senderEmail || "unknown@example.com"
+                from: data.payload.senderEmail || "unknown@example.com",
+                images: Array.isArray(data.payload.images) ? data.payload.images : []
             };
         }
     } catch (err) {
@@ -25,7 +34,7 @@ export const outlookService = {
     /**
      * Get current email details (Subject, Body, Sender)
      */
-    async getCurrentEmail(): Promise<{ subject: string; body: string; sender: string; from: string }> {
+    async getCurrentEmail(): Promise<{ subject: string; body: string; sender: string; from: string; images: string[] }> {
         return new Promise((resolve, reject) => {
             try {
                 // 1. Try standard Office.js API (Web Add-in)
@@ -37,7 +46,8 @@ export const outlookService = {
                                 subject: item.subject || "No Subject",
                                 body: result.value,
                                 sender: item.from?.displayName || "Unknown",
-                                from: item.from?.emailAddress || "unknown@example.com"
+                                from: item.from?.emailAddress || "unknown@example.com",
+                                images: []
                             });
                         } else {
                             reject(result.error.message);
@@ -70,7 +80,8 @@ export const outlookService = {
                                 subject: p.subject || "No Subject",
                                 body: p.body || "",
                                 sender: p.senderName || "Unknown",
-                                from: p.senderEmail || "unknown@example.com"
+                                from: p.senderEmail || "unknown@example.com",
+                                images: Array.isArray(p.images) ? p.images as string[] : []
                             };
                             vstoEmailData = result;
                             resolve(result);
@@ -94,8 +105,40 @@ export const outlookService = {
      * Search emails using EWS (FindItem)
      * Limit: 20 items
      */
-    async searchEmails(keyword: string): Promise<string[]> {
+    async searchEmails(keyword: string): Promise<SearchEmailResult[]> {
         return new Promise((resolve, reject) => {
+            // 1. VSTO fallback (WebView2 mode) – preferred in the desktop add-in
+            if ((window as any).chrome?.webview) {
+                const timer = setTimeout(() => {
+                    window.removeEventListener('message', responseHandler);
+                    reject('Timeout waiting for search results from C# backend');
+                }, 10000);
+
+                const responseHandler = (event: MessageEvent) => {
+                    const data = event.data;
+                    if (data && data.type === 'VSTO_SEARCH_RESULTS' && data.payload?.keyword === keyword) {
+                        clearTimeout(timer);
+                        window.removeEventListener('message', responseHandler);
+                        if (data.payload.error) {
+                            reject(data.payload.error);
+                        } else {
+                            const items: SearchEmailResult[] = (data.payload.items || []).map((item: any) => ({
+                                entryId: item.entryId || '',
+                                subject: item.subject || '',
+                                sender: item.sender || '',
+                                receivedTime: item.receivedTime || '',
+                                preview: item.preview || '',
+                            }));
+                            resolve(items);
+                        }
+                    }
+                };
+                window.addEventListener('message', responseHandler);
+                (window as any).chrome.webview.postMessage(JSON.stringify({ type: 'searchEmails', keyword }));
+                return;
+            }
+
+            // 2. Office.js EWS (Web Add-in mode)
             if (!Office) {
                 reject("Office API not loaded.");
                 return;
@@ -110,8 +153,6 @@ export const outlookService = {
                 reject("EWS Request not supported in this Outlook version/mode.");
                 return;
             }
-            // EWS Request to find items
-            // Note: This is a simplified XML construction. In production, use a proper builder.
             const request =
                 `<?xml version="1.0" encoding="utf-8"?>
           <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
@@ -128,7 +169,6 @@ export const outlookService = {
                   <t:AdditionalProperties>
                     <t:FieldURI FieldURI="item:Subject" />
                     <t:FieldURI FieldURI="message:From" />
-                    <!-- Body Preview is lighter than full Body -->
                     <t:FieldURI FieldURI="item:Body" /> 
                   </t:AdditionalProperties>
                 </m:ItemShape>
@@ -148,24 +188,17 @@ export const outlookService = {
 
             Office.context.mailbox.makeEwsRequestAsync(request, (result) => {
                 if (result.status === Office.AsyncResultStatus.Succeeded) {
-                    // Parse XML response
                     const parser = new DOMParser();
                     const xmlDoc = parser.parseFromString(result.value, "text/xml");
                     const items = xmlDoc.getElementsByTagName("t:Message");
-                    const emails: string[] = [];
-
+                    const emails: SearchEmailResult[] = [];
                     for (let i = 0; i < items.length; i++) {
                         const subject = items[i].getElementsByTagName("t:Subject")[0]?.textContent || "";
-                        // Note: EWS FindItem usually returns BodyPreview, getting full body requires GetItem. 
-                        // For this MVP we use what's available or simulated context if deep body access is needed.
-                        // Here we assume we get enough context. 
-                        // To keep it simple and robust, we grab Subject and From.
-                        emails.push(`Subject: ${subject}`);
+                        const sender = items[i].getElementsByTagName("t:Name")[0]?.textContent || "";
+                        emails.push({ entryId: '', subject, sender, receivedTime: '', preview: '' });
                     }
                     resolve(emails);
                 } else {
-                    // Fallback for demo/dev if EWS fails (common in some web environments)
-                    console.warn("EWS Search failed, returning mock for demonstration if local.");
                     reject(result.error.message);
                 }
             });
@@ -175,6 +208,13 @@ export const outlookService = {
     /**
      * Insert text into reply
      */
+    openEmail(entryId: string) {
+        if (!entryId) return;
+        if ((window as any).chrome?.webview) {
+            (window as any).chrome.webview.postMessage(JSON.stringify({ type: 'openEmail', entryId }));
+        }
+    },
+
     insertText(text: string) {
         if (Office.context && Office.context.mailbox && Office.context.mailbox.item) {
             Office.context.mailbox.item.body.setSelectedDataAsync(text, { coercionType: Office.CoercionType.Html });

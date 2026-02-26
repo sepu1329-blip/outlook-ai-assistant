@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import pressAILogo from './assets/PressAI_Re.png';
 import { Settings, AlertCircle } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -37,17 +38,17 @@ function App() {
   return (
     <div className="flex flex-col h-screen w-full bg-slate-50 relative overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 shadow-sm z-10">
+      <header className="flex items-center justify-between px-5 py-2.5 bg-white border-b border-slate-200 z-10">
         <div className="flex items-center gap-2">
-          <img src="/PressAI_Re.png" alt="Press AI Logo" className="h-8 w-auto" />
-          <h1 className="font-semibold text-slate-800 text-sm">Press AI</h1>
+          <img src={pressAILogo} alt="Press AI Logo" className="h-6 w-6 object-cover rounded" />
+          <h1 className="font-semibold text-slate-800 text-base tracking-tight m-0">Press AI</h1>
         </div>
         <button
           onClick={() => setShowSettings(!showSettings)}
-          className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
-          title="Settings"
+          className="p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-md transition-all"
+          title="설정"
         >
-          <Settings size={18} />
+          <Settings size={20} />
         </button>
       </header>
 

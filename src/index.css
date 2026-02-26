@@ -11,6 +11,20 @@ html, body {
   height: 100%;
 }
 
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
 /* Gemini 스타일 로딩 점 애니메이션 */
 .gemini-dots { display: flex; gap: 5px; align-items: center; padding: 2px 0; }
 .gemini-dot {
