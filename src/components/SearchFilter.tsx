@@ -16,7 +16,7 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({ mode, searchKeyword,
             <div className="flex justify-between items-center">
                 {/* Mode Switcher */}
                 <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">🎯 모드:</span>
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">📍 참조:</span>
                     <div className="flex p-0.5 bg-slate-50 rounded-md">
                         <button
                             onClick={() => onModeChange('current')}
@@ -26,7 +26,7 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({ mode, searchKeyword,
                             )}
                         >
                             <Mail size={12} />
-                            메일
+                            선택한 메일
                         </button>
                         <button
                             onClick={() => onModeChange('search')}
@@ -36,7 +36,7 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({ mode, searchKeyword,
                             )}
                         >
                             <Search size={12} />
-                            검색
+                            검색한 메일
                         </button>
                     </div>
                 </div>
