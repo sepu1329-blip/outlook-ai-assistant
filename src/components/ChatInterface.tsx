@@ -65,9 +65,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
         }
     }, [clearChatTrigger]);
 
-    const handleReplyDraft = (content: string) => {
+    const handleReplyDraft = async (content: string) => {
         try {
-            outlookService.createReplyDraft(content);
+            await outlookService.createReplyDraft(content);
         } catch (err: any) {
             setError("답장 초안 생성 실패: " + err.message);
         }

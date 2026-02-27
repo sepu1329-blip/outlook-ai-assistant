@@ -2,6 +2,9 @@
 // Store the latest email data received from VSTO
 let vstoEmailData: { subject: string; body: string; sender: string; from: string; images: string[] } | null = null;
 
+// Reply result callback
+let replyResultCallback: ((status: string, message: string) => void) | null = null;
+
 export interface SearchEmailResult {
     entryId: string;
     subject: string;
@@ -13,7 +16,6 @@ export interface SearchEmailResult {
 // Listen for messages from VSTO WebView2
 window.addEventListener('message', (event) => {
     try {
-        // Handle VSTO messages
         const data = event.data;
         if (data && data.type === 'VSTO_EMAIL_DATA') {
             console.log("OutlookService: Received data from VSTO", data.payload);
@@ -24,6 +26,11 @@ window.addEventListener('message', (event) => {
                 from: data.payload.senderEmail || "unknown@example.com",
                 images: Array.isArray(data.payload.images) ? data.payload.images : []
             };
+        } else if (data && data.type === 'VSTO_REPLY_RESULT') {
+            if (replyResultCallback) {
+                replyResultCallback(data.payload?.status, data.payload?.message);
+                replyResultCallback = null;
+            }
         }
     } catch (err) {
         console.error("Error processing VSTO message:", err);
@@ -224,31 +231,39 @@ export const outlookService = {
     /**
      * Create a reply draft (Hybrid Mode)
      */
-    createReplyDraft(text: string) {
-        // 1. Try VSTO first (Hybrid Mode Preferred)
-        // Note: We use window.chrome?.webview for WebView2 or standard window.postMessage for embedded
-        try {
-            if ((window as any).chrome?.webview) {
-                console.log("OutlookService: Sending Reply Draft to VSTO");
-                (window as any).chrome.webview.postMessage({
-                    type: "VSTO_CREATE_REPLY",
-                    payload: { body: text }
-                });
-                return;
-            }
-        } catch (e) {
-            console.warn("VSTO postMessage failed:", e);
-        }
+    createReplyDraft(text: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            // 1. Try VSTO first (Hybrid Mode Preferred)
+            try {
+                if ((window as any).chrome?.webview) {
+                    const timer = setTimeout(() => {
+                        replyResultCallback = null;
+                        reject(new Error("답장 생성 시간 초과"));
+                    }, 10000);
 
-        // 2. Try Standard Web Add-in API
-        if (Office.context && Office.context.mailbox && Office.context.mailbox.item) {
-            // Note: displayReplyForm is standard, but might be blocked in this environment
-            Office.context.mailbox.item.displayReplyForm({
-                'htmlBody': text
-            });
-        } else {
-            console.warn("Cannot create reply: Neither VSTO nor Office.js available.");
-            throw new Error("Cannot create reply. Are you connected to Outlook?");
-        }
+                    replyResultCallback = (status: string, message: string) => {
+                        clearTimeout(timer);
+                        if (status === '성공') resolve();
+                        else reject(new Error(message));
+                    };
+
+                    (window as any).chrome.webview.postMessage(JSON.stringify({
+                        type: "VSTO_CREATE_REPLY",
+                        payload: { body: text }
+                    }));
+                    return;
+                }
+            } catch (e) {
+                console.warn("VSTO postMessage failed:", e);
+            }
+
+            // 2. Try Standard Web Add-in API
+            if (Office.context && Office.context.mailbox && Office.context.mailbox.item) {
+                Office.context.mailbox.item.displayReplyForm({ 'htmlBody': text });
+                resolve();
+            } else {
+                reject(new Error("Outlook에 연결되지 않았습니다."));
+            }
+        });
     }
 };
