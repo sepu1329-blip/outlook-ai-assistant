@@ -17,7 +17,19 @@ function App() {
 
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem('redink-outlook-settings');
-    return saved ? JSON.parse(saved) : {
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          geminiKey: parsed.geminiKey || '',
+          selectedModel: (parsed.selectedModel === 'gemini-2.5-flash' || parsed.selectedModel === 'gemini-2.5-pro') ? parsed.selectedModel : 'gemini-2.5-flash',
+          systemPrompt: parsed.systemPrompt || DEFAULT_SYSTEM_PROMPT
+        };
+      } catch (e) {
+        console.error("Failed to parse settings", e);
+      }
+    }
+    return {
       geminiKey: '',
       selectedModel: 'gemini-2.5-flash',
       systemPrompt: DEFAULT_SYSTEM_PROMPT
