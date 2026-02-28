@@ -197,7 +197,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
             const response = await llmService.sendMessage(llmMessages, context, settings, emailImages.length > 0 ? emailImages : undefined);
 
             // 3. Parse LLM citations and filter the search results
+            let finalResponseContent = response;
             let filteredResults: typeof searchResultsContext = [];
+
             if (mode === 'search' && searchResultsContext.length > 0) {
                 // Find all matches of [Email X] or [Email #X] or [Email: X] formatting
                 const regex = /\[Email\s*#?:?\s*(\d+)\]/gi;
@@ -211,13 +213,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
                 }
                 // Only keep exactly the emails the LLM explicitly cited
                 filteredResults = searchResultsContext.filter((_, idx) => citedIndices.has(idx));
+
+                // Remove the citation tokens from the actual message text displayed to the user
+                finalResponseContent = response.replace(/\[Email\s*#?:?\s*\d+\]/gi, '').trim();
             }
 
             // 4. Add AI Response
             const assistantMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: response,
+                content: finalResponseContent,
                 timestamp: Date.now(),
                 searchResults: filteredResults.length > 0 ? filteredResults : undefined
             };
