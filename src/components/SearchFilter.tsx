@@ -47,25 +47,27 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({ mode, searchSender, 
             {/* View container for Search Inputs */}
             {mode === 'search' && (
                 <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="relative">
-                        <User className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                        <input
-                            type="text"
-                            value={searchSender}
-                            onChange={(e) => onSenderChange(e.target.value)}
-                            placeholder="보낸 사람 (예: 홍길동)"
-                            className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-md focus:border-indigo-600 focus:outline-none transition-colors"
-                        />
-                    </div>
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                        <input
-                            type="text"
-                            value={searchKeyword}
-                            onChange={(e) => onKeywordChange(e.target.value)}
-                            placeholder="검색어 입력..."
-                            className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-md focus:border-indigo-600 focus:outline-none transition-colors"
-                        />
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <User className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                            <input
+                                type="text"
+                                value={searchSender}
+                                onChange={(e) => onSenderChange(e.target.value)}
+                                placeholder="보낸 사람 (예: 홍길동)"
+                                className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-md focus:border-indigo-600 focus:outline-none transition-colors"
+                            />
+                        </div>
+                        <div className="relative flex-1">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                            <input
+                                type="text"
+                                value={searchKeyword}
+                                onChange={(e) => onKeywordChange(e.target.value)}
+                                placeholder="검색어 입력..."
+                                className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-md focus:border-indigo-600 focus:outline-none transition-colors"
+                            />
+                        </div>
                     </div>
 
                     {!searchSender && !searchKeyword && (
