@@ -199,8 +199,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
             // 3. Parse LLM citations and filter the search results
             let filteredResults: typeof searchResultsContext = [];
             if (mode === 'search' && searchResultsContext.length > 0) {
-                // Find all matches of [Email #X]
-                const regex = /\[Email\s*#(\d+)\]/gi;
+                // Find all matches of [Email X] or [Email #X] or [Email: X] formatting
+                const regex = /\[Email\s*#?:?\s*(\d+)\]/gi;
                 let match;
                 const citedIndices = new Set<number>();
                 while ((match = regex.exec(response)) !== null) {
