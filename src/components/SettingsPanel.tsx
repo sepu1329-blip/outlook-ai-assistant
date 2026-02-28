@@ -36,31 +36,19 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onSave, 
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
                 {/* Model Selection */}
                 <div className="space-y-2">
-                    <label className="block text-sm font-medium text-slate-700">기본 모델 선택</label>
+                    <label className="block text-sm font-medium text-slate-700">모델 선택</label>
                     <select
                         value={localSettings.selectedModel}
                         onChange={(e) => handleChange('selectedModel', e.target.value as LLMProvider)}
                         className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     >
-                        <option value="openai">OpenAI (GPT-4o)</option>
-                        <option value="gemini">Google Gemini</option>
-                        <option value="claude">Anthropic Claude</option>
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                     </select>
                 </div>
 
                 {/* API Keys */}
                 <div className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="block text-sm font-medium text-slate-700">OpenAI API 키</label>
-                        <input
-                            type="password"
-                            value={localSettings.openaiKey}
-                            onChange={(e) => handleChange('openaiKey', e.target.value)}
-                            placeholder="sk-..."
-                            className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        />
-                    </div>
-
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-slate-700">Gemini API 키</label>
                         <input
@@ -71,17 +59,21 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, onSave, 
                             className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         />
                     </div>
+                </div>
 
-                    <div className="space-y-2">
-                        <label className="block text-sm font-medium text-slate-700">Claude API 키</label>
-                        <input
-                            type="password"
-                            value={localSettings.claudeKey}
-                            onChange={(e) => handleChange('claudeKey', e.target.value)}
-                            placeholder="sk-ant..."
-                            className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        />
-                    </div>
+                {/* System Prompt Customization */}
+                <div className="space-y-2">
+                    <label className="block text-sm font-medium text-slate-700">시스템 프롬프트 (System Prompt)</label>
+                    <textarea
+                        value={localSettings.systemPrompt || ''}
+                        onChange={(e) => handleChange('systemPrompt', e.target.value)}
+                        placeholder="기본 시스템 프롬프트를 입력하세요..."
+                        rows={8}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono text-xs"
+                    />
+                    <p className="text-xs text-slate-500 mt-1 leading-snug">
+                        기본 설정된 AI의 행동 지침입니다. 자유롭게 수정하여 원하는 방식으로 AI를 세팅해보세요!
+                    </p>
                 </div>
             </div>
 

@@ -5,6 +5,7 @@ import { ChatInterface } from './components/ChatInterface';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SearchFilter } from './components/SearchFilter';
 import type { AppSettings, AppMode } from './types';
+import { DEFAULT_SYSTEM_PROMPT } from './services/llmService';
 
 function App() {
   const [showSettings, setShowSettings] = useState(false);
@@ -14,14 +15,12 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [clearChatTrigger, setClearChatTrigger] = useState(0);
 
-  // Initialize Settings from LocalStorage
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem('redink-outlook-settings');
     return saved ? JSON.parse(saved) : {
-      openaiKey: '',
       geminiKey: '',
-      claudeKey: '',
-      selectedModel: 'openai'
+      selectedModel: 'gemini-2.5-flash',
+      systemPrompt: DEFAULT_SYSTEM_PROMPT
     };
   });
 
@@ -33,7 +32,7 @@ function App() {
 
   const clearSettings = () => {
     localStorage.removeItem('redink-outlook-settings');
-    setSettings({ openaiKey: '', geminiKey: '', claudeKey: '', selectedModel: 'openai' });
+    setSettings({ geminiKey: '', selectedModel: 'gemini-2.5-flash', systemPrompt: DEFAULT_SYSTEM_PROMPT });
     setError(null);
   };
 

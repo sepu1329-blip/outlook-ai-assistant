@@ -10,13 +10,12 @@ export interface Message {
     searchResults?: SearchEmailResult[];
 }
 
-export type LLMProvider = 'openai' | 'gemini' | 'claude';
+export type LLMProvider = 'gemini-2.5-flash' | 'gemini-2.5-pro';
 
 export interface AppSettings {
-    openaiKey: string;
     geminiKey: string;
-    claudeKey: string;
     selectedModel: LLMProvider;
+    systemPrompt?: string;
 }
 
 export type AppMode = 'current' | 'search';
