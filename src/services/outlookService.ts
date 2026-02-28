@@ -112,7 +112,7 @@ export const outlookService = {
      * Search emails using EWS (FindItem)
      * Limit: 20 items
      */
-    async searchEmails(keyword: string): Promise<SearchEmailResult[]> {
+    async searchEmails(sender: string, keyword: string): Promise<SearchEmailResult[]> {
         return new Promise((resolve, reject) => {
             // 1. VSTO fallback (WebView2 mode) – preferred in the desktop add-in
             if ((window as any).chrome?.webview) {
@@ -123,7 +123,7 @@ export const outlookService = {
 
                 const responseHandler = (event: MessageEvent) => {
                     const data = event.data;
-                    if (data && data.type === 'VSTO_SEARCH_RESULTS' && data.payload?.keyword === keyword) {
+                    if (data && data.type === 'VSTO_SEARCH_RESULTS' && data.payload?.keyword === keyword && data.payload?.sender === sender) {
                         clearTimeout(timer);
                         window.removeEventListener('message', responseHandler);
                         if (data.payload.error) {
@@ -141,7 +141,7 @@ export const outlookService = {
                     }
                 };
                 window.addEventListener('message', responseHandler);
-                (window as any).chrome.webview.postMessage(JSON.stringify({ type: 'searchEmails', keyword }));
+                (window as any).chrome.webview.postMessage(JSON.stringify({ type: 'searchEmails', sender, keyword }));
                 return;
             }
 
@@ -181,10 +181,31 @@ export const outlookService = {
                 </m:ItemShape>
                 <m:IndexedPageItemView BasePoint="Beginning" MaxEntriesReturned="20" Offset="0" />
                 <m:Restriction>
-                  <t:Contains Mode="Substring" ContainmentComparison="IgnoreCase">
-                    <t:FieldURI FieldURI="item:Body" />
-                    <t:Constant Value="${keyword}" />
-                  </t:Contains>
+                  <t:And>
+                    ${sender ? `
+                    <t:Contains Mode="Substring" ContainmentComparison="IgnoreCase">
+                      <t:FieldURI FieldURI="message:From" />
+                      <t:Constant Value="${sender}" />
+                    </t:Contains>
+                    ` : ""}
+                    ${keyword ? `
+                    <t:Or>
+                      <t:Contains Mode="Substring" ContainmentComparison="IgnoreCase">
+                        <t:FieldURI FieldURI="item:Subject" />
+                        <t:Constant Value="${keyword}" />
+                      </t:Contains>
+                      <t:Contains Mode="Substring" ContainmentComparison="IgnoreCase">
+                        <t:FieldURI FieldURI="item:Body" />
+                        <t:Constant Value="${keyword}" />
+                      </t:Contains>
+                    </t:Or>
+                    ` : sender ? "" : `
+                    <t:Contains Mode="Substring" ContainmentComparison="IgnoreCase">
+                      <t:FieldURI FieldURI="item:Subject" />
+                      <t:Constant Value="" />
+                    </t:Contains>
+                    `}
+                  </t:And>
                 </m:Restriction>
                 <m:ParentFolderIds>
                   <t:DistinguishedFolderId Id="inbox" />

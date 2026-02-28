@@ -9,6 +9,7 @@ import type { AppSettings, AppMode } from './types';
 function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [appMode, setAppMode] = useState<AppMode>('current');
+  const [searchSender, setSearchSender] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [clearChatTrigger, setClearChatTrigger] = useState(0);
@@ -65,8 +66,10 @@ function App() {
       {/* Controls (Search Mode) */}
       <SearchFilter
         mode={appMode}
+        searchSender={searchSender}
         searchKeyword={searchKeyword}
         onModeChange={setAppMode}
+        onSenderChange={setSearchSender}
         onKeywordChange={setSearchKeyword}
       />
 
@@ -75,6 +78,7 @@ function App() {
         <ChatInterface
           settings={settings}
           mode={appMode}
+          searchSender={searchSender}
           searchKeyword={searchKeyword}
           clearChatTrigger={clearChatTrigger}
         />

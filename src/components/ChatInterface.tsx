@@ -18,11 +18,12 @@ interface Message {
 interface ChatInterfaceProps {
     settings: AppSettings;
     mode: AppMode;
+    searchSender: string;
     searchKeyword: string;
     clearChatTrigger?: number;
 }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, searchKeyword, clearChatTrigger }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, searchSender, searchKeyword, clearChatTrigger }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -159,6 +160,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
             let context = "";
             let emailImages: string[] = [];
 
+            let searchResultsContext: import('../services/outlookService').SearchEmailResult[] = [];
+
             if (mode === 'current') {
                 // Try to get current email (including inline images)
                 try {
@@ -169,27 +172,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
                     console.log("No email context available:", e);
                 }
             } else if (mode === 'search') {
-                if (!searchKeyword.trim()) {
-                    throw new Error("검색 모드에서는 검색어를 입력해주세요.");
+                if (!searchSender.trim() && !searchKeyword.trim()) {
+                    throw new Error("검색 모드에서는 보낸 사람 또는 검색어를 하나 이상 입력해주세요.");
                 }
                 try {
-                    // In search mode, we fetch relevant emails based on the keyword
-                    const results = await outlookService.searchEmails(searchKeyword);
-
-                    // Show clickable email cards in chat
-                    const searchMsg: Message = {
-                        id: (Date.now() + 0.1).toString(),
-                        role: 'search-results',
-                        content: `"${searchKeyword}"와 일치하는 이메일 ${results.length}개를 찾았습니다.`,
-                        timestamp: Date.now(),
-                        searchResults: results,
-                    };
-                    setMessages(prev => [...prev, searchMsg]);
+                    // In search mode, we fetch relevant emails based on the keyword/sender
+                    const results = await outlookService.searchEmails(searchSender, searchKeyword);
+                    searchResultsContext = results;
 
                     // Build LLM context with numbered emails
-                    context += `"${searchKeyword}"와 일치하는 이메일 ${results.length}개를 찾았습니다:\n\n`;
+                    context += `다음은 사용자가 "${searchSender ? `보낸 사람: ${searchSender}` : ''} ${searchKeyword ? `검색어: ${searchKeyword}` : ''}" 조건으로 검색한 상위 ${results.length}개의 이메일 내역입니다.\n`;
+                    context += `지침: 답변을 작성할 때 반드시 이메일을 참고하고, 참고한 내용의 끝에는 항상 [Email #번호] 형식으로 출처를 표기하세요.\n\n`;
                     context += results.map((r, i) =>
-                        `이메일 #${i + 1}: [${r.receivedTime}] 보낸 사람: ${r.sender} | 제목: ${r.subject}\n${r.preview}`
+                        `[Email #${i + 1}]:\n보낸 사람: ${r.sender}\n수신 시간: ${r.receivedTime}\n제목: ${r.subject}\n미리보기: ${r.preview}`
                     ).join('\n\n');
                     context += '\n\n';
                 } catch (e) {
@@ -201,12 +196,30 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
             const llmMessages = newMessages.filter(m => m.role !== 'search-results') as import('../types').Message[];
             const response = await llmService.sendMessage(llmMessages, context, settings, emailImages.length > 0 ? emailImages : undefined);
 
-            // 3. Add AI Response
+            // 3. Parse LLM citations and filter the search results
+            let filteredResults: typeof searchResultsContext = [];
+            if (mode === 'search' && searchResultsContext.length > 0) {
+                // Find all matches of [Email #X]
+                const regex = /\[Email\s*#(\d+)\]/gi;
+                let match;
+                const citedIndices = new Set<number>();
+                while ((match = regex.exec(response)) !== null) {
+                    const idx = parseInt(match[1], 10) - 1;
+                    if (!isNaN(idx) && idx >= 0 && idx < searchResultsContext.length) {
+                        citedIndices.add(idx);
+                    }
+                }
+                // Only keep exactly the emails the LLM explicitly cited
+                filteredResults = searchResultsContext.filter((_, idx) => citedIndices.has(idx));
+            }
+
+            // 4. Add AI Response
             const assistantMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
                 content: response,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                searchResults: filteredResults.length > 0 ? filteredResults : undefined
             };
             setMessages(prev => [...prev, assistantMessage]);
 
@@ -234,26 +247,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
                         key={msg.id}
                         className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                        {msg.role === 'search-results' ? (
-                            <div className="max-w-[92%] rounded-xl px-3 py-2.5 bg-blue-50 border border-blue-100 text-sm">
-                                <p className="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-1">
-                                    <Mail className="w-3.5 h-3.5" />
-                                    {msg.content}
-                                </p>
-                                <div className="flex flex-col gap-1">
-                                    {msg.searchResults?.map((result) => (
-                                        <button
-                                            key={result.entryId || result.subject}
-                                            onClick={() => outlookService.openEmail(result.entryId)}
-                                            className="w-full text-left px-2.5 py-2 rounded-lg bg-white hover:bg-blue-100 border border-blue-100 cursor-pointer group transition-colors"
-                                        >
-                                            <p className="text-xs font-medium text-gray-800 truncate group-hover:text-blue-700 leading-snug">{result.subject}</p>
-                                            <p className="text-[10px] text-gray-500 mt-0.5">{result.sender}{result.receivedTime ? ` · ${result.receivedTime}` : ''}</p>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : (
+                        {msg.role === 'search-results' ? null : (
                             <div
                                 className={`max-w-[85%] ${msg.role === 'user'
                                     ? 'rounded-2xl rounded-br-sm px-4 py-3 bg-[#4f46e5] text-white text-sm'
@@ -267,6 +261,28 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
                                         {msg.content}
                                     </ReactMarkdown>
                                 </div>
+
+                                {/* Inline Cited Search Results under Assistant Message */}
+                                {msg.role === 'assistant' && msg.searchResults && msg.searchResults.length > 0 && (
+                                    <div className="mt-3 bg-white/60 rounded-xl p-2.5 border border-slate-200 shadow-sm">
+                                        <p className="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-1">
+                                            <Mail className="w-3.5 h-3.5 text-slate-500" />
+                                            답변에 참조된 이메일
+                                        </p>
+                                        <div className="flex flex-col gap-1.5">
+                                            {msg.searchResults.map((result) => (
+                                                <button
+                                                    key={result.entryId || result.subject}
+                                                    onClick={() => outlookService.openEmail(result.entryId)}
+                                                    className="w-full text-left px-2.5 py-2 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 cursor-pointer group transition-colors shadow-sm"
+                                                >
+                                                    <p className="text-xs font-medium text-slate-800 truncate group-hover:text-indigo-600 leading-snug">{result.subject}</p>
+                                                    <p className="text-[10px] text-slate-500 mt-0.5">{result.sender}{result.receivedTime ? ` · ${result.receivedTime}` : ''}</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Action Buttons for Assistant Messages */}
                                 {msg.role === 'assistant' && (

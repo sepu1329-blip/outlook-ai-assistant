@@ -1,16 +1,18 @@
 import React from 'react';
-import { Search, Mail } from 'lucide-react';
+import { Search, Mail, User } from 'lucide-react';
 import type { AppMode } from '../types';
 import { cn } from '../lib/utils';
 
 interface SearchFilterProps {
     mode: AppMode;
+    searchSender: string;
     searchKeyword: string;
     onModeChange: (mode: AppMode) => void;
+    onSenderChange: (sender: string) => void;
     onKeywordChange: (keyword: string) => void;
 }
 
-export const SearchFilter: React.FC<SearchFilterProps> = ({ mode, searchKeyword, onModeChange, onKeywordChange }) => {
+export const SearchFilter: React.FC<SearchFilterProps> = ({ mode, searchSender, searchKeyword, onModeChange, onSenderChange, onKeywordChange }) => {
     return (
         <div className="flex flex-col p-3 bg-white border-b border-slate-200 gap-3">
             <div className="flex justify-between items-center">
@@ -40,28 +42,38 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({ mode, searchKeyword,
                         </button>
                     </div>
                 </div>
-
-                {/* Additional context or buttons could go here on the right, mimicking Excel's layout */}
             </div>
 
-            {/* Search Input (Only visible in search mode) */}
+            {/* View container for Search Inputs */}
             {mode === 'search' && (
-                <div className="relative animate-in fade-in slide-in-from-top-2 duration-200">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                    <input
-                        type="text"
-                        value={searchKeyword}
-                        onChange={(e) => onKeywordChange(e.target.value)}
-                        placeholder="검색어 입력..."
-                        className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-md focus:border-indigo-600 focus:outline-none transition-colors"
-                    />
-                </div>
-            )}
+                <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="relative">
+                        <User className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        <input
+                            type="text"
+                            value={searchSender}
+                            onChange={(e) => onSenderChange(e.target.value)}
+                            placeholder="보낸 사람 (예: 홍길동)"
+                            className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-md focus:border-indigo-600 focus:outline-none transition-colors"
+                        />
+                    </div>
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        <input
+                            type="text"
+                            value={searchKeyword}
+                            onChange={(e) => onKeywordChange(e.target.value)}
+                            placeholder="검색어 입력..."
+                            className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-md focus:border-indigo-600 focus:outline-none transition-colors"
+                        />
+                    </div>
 
-            {mode === 'search' && !searchKeyword && (
-                <p className="text-[10px] text-orange-600 pl-1 mt-0">
-                    * 검색어를 입력해주세요
-                </p>
+                    {!searchSender && !searchKeyword && (
+                        <p className="text-[10px] text-orange-600 pl-1 mt-0">
+                            * 검색 조건을 하나 이상 입력해주세요
+                        </p>
+                    )}
+                </div>
             )}
         </div>
     );
