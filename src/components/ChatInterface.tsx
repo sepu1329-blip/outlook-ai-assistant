@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Reply, Mail } from 'lucide-react';
+import { Send, Reply, Mail, Copy, Check } from 'lucide-react';
 import { outlookService } from '../services/outlookService';
 import type { SearchEmailResult } from '../services/outlookService';
 import { llmService } from '../services/llmService';
@@ -27,10 +27,75 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    const handleCopyToClipboard = async (messageId: string) => {
+        try {
+            const sourceElement = document.getElementById(`msg-content-${messageId}`);
+            if (!sourceElement) return;
+
+            const clone = sourceElement.cloneNode(true) as HTMLElement;
+
+            // Inline computed styles to keep the design intact in Outlook
+            const propsToInline = [
+                'color', 'background-color', 'font-family', 'font-size', 'font-weight',
+                'font-style', 'text-decoration', 'border-top', 'border-right', 'border-bottom',
+                'border-left', 'padding', 'margin', 'line-height', 'text-align', 'border-collapse'
+            ];
+
+            const applyStyles = (src: Element, tgt: HTMLElement) => {
+                const computed = window.getComputedStyle(src);
+                propsToInline.forEach(prop => {
+                    const val = computed.getPropertyValue(prop);
+                    if (val && val !== 'rgba(0, 0, 0, 0)' && val !== 'transparent' && val !== 'none') {
+                        tgt.style.setProperty(prop, val);
+                    }
+                });
+
+                if (tgt.tagName === 'TABLE') {
+                    tgt.setAttribute('border', '1');
+                    tgt.setAttribute('cellspacing', '0');
+                    tgt.setAttribute('cellpadding', '8');
+                    tgt.style.borderCollapse = 'collapse';
+                }
+
+                Array.from(src.children).forEach((child, i) => {
+                    applyStyles(child, tgt.children[i] as HTMLElement);
+                });
+            };
+
+            applyStyles(sourceElement, clone);
+
+            const html = clone.outerHTML;
+            const text = sourceElement.innerText;
+
+            const clipboardItem = new ClipboardItem({
+                'text/html': new Blob([html], { type: 'text/html' }),
+                'text/plain': new Blob([text], { type: 'text/plain' })
+            });
+
+            await navigator.clipboard.write([clipboardItem]);
+            setCopiedId(messageId);
+            setTimeout(() => setCopiedId(null), 2000);
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+            // Fallback
+            try {
+                const sourceElement = document.getElementById(`msg-content-${messageId}`);
+                if (sourceElement) {
+                    await navigator.clipboard.writeText(sourceElement.innerText);
+                    setCopiedId(messageId);
+                    setTimeout(() => setCopiedId(null), 2000);
+                }
+            } catch (fallbackErr) {
+                console.error('Fallback copy failed:', fallbackErr);
+            }
+        }
     };
 
     useEffect(() => {
@@ -197,21 +262,37 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ settings, mode, se
                                         : 'rounded-2xl rounded-bl-sm px-4 py-3 bg-[#f1f5f9] text-slate-800 text-sm'
                                     }`}
                             >
-                                <div className="markdown-content">
+                                <div id={`msg-content-${msg.id}`} className="markdown-content">
                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                         {msg.content}
                                     </ReactMarkdown>
                                 </div>
 
-                                {/* Reply Button for Assistant Messages containing draft-like text */}
+                                {/* Action Buttons for Assistant Messages */}
                                 {msg.role === 'assistant' && (
-                                    <div className="mt-2 flex justify-end">
+                                    <div className="mt-3 flex justify-end gap-3">
+                                        <button
+                                            onClick={() => handleCopyToClipboard(msg.id)}
+                                            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 font-medium transition-colors"
+                                        >
+                                            {copiedId === msg.id ? (
+                                                <>
+                                                    <Check className="w-3.5 h-3.5 text-green-600" />
+                                                    <span className="text-green-600">복사됨</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy className="w-3.5 h-3.5" />
+                                                    <span>복사</span>
+                                                </>
+                                            )}
+                                        </button>
                                         <button
                                             onClick={() => handleReplyDraft(msg.content)}
-                                            className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium"
+                                            className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
                                         >
-                                            <Reply className="w-3 h-3" />
-                                            이 내용으로 답장하기
+                                            <Reply className="w-3.5 h-3.5" />
+                                            <span>답장하기</span>
                                         </button>
                                     </div>
                                 )}
