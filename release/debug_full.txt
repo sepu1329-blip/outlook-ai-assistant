@@ -1,0 +1,45 @@
+@echo off
+setlocal
+
+echo [DIAGNOSIS START] Outlook Add-in Visibility Check
+echo.
+
+set "ID=b704c768-466d-4952-8700-123456789abc"
+
+echo 1. Checking HKLM (Admin Registration)...
+reg query "HKEY_LOCAL_MACHINE\Software\Microsoft\Office\16.0\WEF\Developer" /v "%ID%" >nul 2>&1
+if %errorlevel% equ 0 ( echo [FOUND] HKLM Key exists. ) else ( echo [MISSING] HKLM Key not found. )
+
+echo.
+echo 2. Checking HKCU (User Registration)...
+reg query "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\WEF\Developer" /v "%ID%" >nul 2>&1
+if %errorlevel% equ 0 ( echo [FOUND] HKCU Key exists. ) else ( echo [MISSING] HKCU Key not found. )
+
+echo.
+echo 3. Checking Policies (Is it blocked?)...
+reg query "HKEY_CURRENT_USER\Software\Policies\Microsoft\Office\16.0\WEF" /s 2>nul
+if %errorlevel% equ 0 ( 
+    echo [ALERT] HKCU Policy settings found. This might block sideloading.
+) else ( 
+    echo [CLEAN] No HKCU WEF Policies found. 
+)
+
+reg query "HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Office\16.0\WEF" /s 2>nul
+if %errorlevel% equ 0 ( 
+    echo [ALERT] HKLM Policy settings found. This might block sideloading.
+) else ( 
+    echo [CLEAN] No HKLM WEF Policies found. 
+)
+
+echo.
+echo 4. Checking Privacy Settings (Connected Experiences)...
+REM This key controls "Optional Connected Experiences". 1 = Enabled, 2 = Disabled.
+reg query "HKEY_CURRENT_USER\Software\Microsoft\Office\16.0\Common\Privacy" /v "ControllerConnectedExperiences" 2>nul
+reg query "HKEY_CURRENT_USER\Software\Policies\Microsoft\Office\16.0\Common\Privacy" /v "ControllerConnectedExperiences" 2>nul
+
+echo.
+echo [DIAGNOSIS END]
+echo Please verify if [FOUND] appears in step 1 or 2.
+echo Please verify if [ALERT] appears in step 3.
+echo.
+pause

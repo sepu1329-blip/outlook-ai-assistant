@@ -1,0 +1,121 @@
+import { useState } from 'react';
+import pressAILogo from './assets/PressAI_Re.png';
+import { Settings, AlertCircle, Trash2 } from 'lucide-react';
+import { ChatInterface } from './components/ChatInterface';
+import { SettingsPanel } from './components/SettingsPanel';
+import { SearchFilter } from './components/SearchFilter';
+import type { AppSettings, AppMode } from './types';
+import { DEFAULT_SYSTEM_PROMPT } from './services/llmService';
+
+function App() {
+  const [showSettings, setShowSettings] = useState(false);
+  const [appMode, setAppMode] = useState<AppMode>('current');
+  const [searchSender, setSearchSender] = useState('');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [clearChatTrigger, setClearChatTrigger] = useState(0);
+
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    const saved = localStorage.getItem('redink-outlook-settings');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          geminiKey: parsed.geminiKey || '',
+          selectedModel: (parsed.selectedModel === 'gemini-2.5-flash' || parsed.selectedModel === 'gemini-2.5-pro') ? parsed.selectedModel : 'gemini-2.5-flash',
+          systemPrompt: parsed.systemPrompt || DEFAULT_SYSTEM_PROMPT
+        };
+      } catch (e) {
+        console.error("Failed to parse settings", e);
+      }
+    }
+    return {
+      geminiKey: '',
+      selectedModel: 'gemini-2.5-flash',
+      systemPrompt: DEFAULT_SYSTEM_PROMPT
+    };
+  });
+
+  const saveSettings = (newSettings: AppSettings) => {
+    setSettings(newSettings);
+    localStorage.setItem('redink-outlook-settings', JSON.stringify(newSettings));
+    setShowSettings(false);
+  };
+
+  const clearSettings = () => {
+    localStorage.removeItem('redink-outlook-settings');
+    setSettings({ geminiKey: '', selectedModel: 'gemini-2.5-flash', systemPrompt: DEFAULT_SYSTEM_PROMPT });
+    setError(null);
+  };
+
+  return (
+    <div className="flex flex-col h-screen w-full bg-slate-50 relative overflow-hidden">
+      {/* Header */}
+      <header className="flex items-center justify-between px-5 py-2.5 bg-white border-b border-slate-200 z-10">
+        <div className="flex items-center gap-2">
+          <img src={pressAILogo} alt="Press AI Logo" className="h-6 w-6 object-cover rounded" />
+          <h1 className="font-semibold text-slate-800 text-base tracking-tight m-0">Press AI</h1>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setClearChatTrigger(prev => prev + 1)}
+            className="p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-md transition-all"
+            title="대화 초기화"
+          >
+            <Trash2 size={20} />
+          </button>
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-md transition-all"
+            title="설정"
+          >
+            <Settings size={20} />
+          </button>
+        </div>
+      </header>
+
+      {/* Controls (Search Mode) */}
+      <SearchFilter
+        mode={appMode}
+        searchSender={searchSender}
+        searchKeyword={searchKeyword}
+        onModeChange={setAppMode}
+        onSenderChange={setSearchSender}
+        onKeywordChange={setSearchKeyword}
+      />
+
+      {/* Main Chat Area */}
+      <div className="flex-1 overflow-hidden relative">
+        <ChatInterface
+          settings={settings}
+          mode={appMode}
+          searchSender={searchSender}
+          searchKeyword={searchKeyword}
+          clearChatTrigger={clearChatTrigger}
+        />
+      </div>
+
+      {/* Error Toast */}
+      {error && (
+        <div className="absolute top-16 left-4 right-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-lg text-sm flex items-start gap-2 animate-in slide-in-from-top-2 z-40">
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
+          <p className="flex-1">{error}</p>
+          <button onClick={() => setError(null)} className="font-bold hover:opacity-75">×</button>
+        </div>
+      )}
+
+      {/* Settings Overlay */}
+      {showSettings && (
+        <SettingsPanel
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          settings={settings}
+          onSave={saveSettings}
+          onClear={clearSettings}
+        />
+      )}
+    </div>
+  );
+}
+
+export default App;
